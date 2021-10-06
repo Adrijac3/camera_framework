@@ -4,7 +4,6 @@ import cv2
 import time
 import torch
 import joblib
-import trimesh
 import pickle
 import math
 import shutil
@@ -17,10 +16,10 @@ import random
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-from lib.models.smpl import SMPL, SMPL_MODEL_DIR
-from lib.models.smpl import get_smpl_faces
-
+from smpl import SMPL, SMPL_MODEL_DIR
+from smpl import get_smpl_faces
 from pyrender.constants import RenderFlags
+import trimesh
 
 class WeakPerspectiveCamera(pyrender.Camera):
     def __init__(self,
@@ -77,7 +76,6 @@ class Renderer:
 
     def render(self, img, verts, cam, angle=None, axis=None, mesh_filename=None, color=[1.0, 1.0, 0.9], rotate=False):
         mesh = trimesh.Trimesh(vertices=verts, faces=self.faces, process=False)
-
         Rx = trimesh.transformations.rotation_matrix(math.radians(180), [1, 0, 0])
         mesh.apply_transform(Rx)
 
@@ -92,9 +90,7 @@ class Renderer:
         if angle and axis:
             R = trimesh.transformations.rotation_matrix(math.radians(angle), axis)
             mesh.apply_transform(R)
-
         sx, sy, tx, ty = cam
-
         # sx = 1
         # sy = 1
         # tx = 0
@@ -105,7 +101,6 @@ class Renderer:
             zfar=1000.
         )
 
-
         material = pyrender.MetallicRoughnessMaterial(
             metallicFactor=0.0,
             alphaMode='OPAQUE',
@@ -115,11 +110,8 @@ class Renderer:
             emissiveFactor=(0.1, 0.1, 0.1),
             baseColorFactor=(color[0], color[1], color[2], 1.0)
         )
-
         mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
-
         mesh_node = self.scene.add(mesh, 'mesh')
-
         camera_pose = np.eye(4)
         cam_node = self.scene.add(camera, pose=camera_pose)
 
@@ -127,69 +119,65 @@ class Renderer:
             render_flags = RenderFlags.RGBA | RenderFlags.ALL_WIREFRAME
         else:
             render_flags = RenderFlags.RGBA
-
         rgb, _ = self.renderer.render(self.scene, flags=render_flags)
-
         # plt.imshow(rgb) ;plt.show()
-
         valid_mask = (rgb[:, :, -1] > 0)[:, :, np.newaxis]
-
         output_img = rgb[:, :, :-1] * valid_mask + (1 - valid_mask) * img
         image = output_img.astype(np.uint8)
-
         self.scene.remove_node(mesh_node)
         self.scene.remove_node(cam_node)
-
         return image, valid_mask
 
-if __name__ == '__main__':
+def render_current_frame(ret, frame, frame_cam, renderer, model, pose, betas, global_orient):
+    pose = torch.tensor(pose).unsqueeze(0).float()
+    betas  = torch.tensor(betas).unsqueeze(0).float()
+    go = torch.tensor(global_orient).unsqueeze(0).float()
+    out = model(global_orient = go, body_pose = pose, betas = betas[..., -1])
+    frame_verts = out.vertices[0].detach().numpy()
 
+    if ret:
+        img, mask = renderer.render( frame[..., ::-1], frame_verts, cam=frame_cam, mesh_filename=None,)
+    return img, mask
+
+
+def initialize_rendering():
     frame_name  = 'abhi'
     gender = 'male'
-    video_path = f"/home/ady/CVIT/annotation_3d-main_003/annotation_3d-main/data/to_annotate/{frame_name}/{frame_name}.mp4"
-    tcmr_output = f"/home/ady/CVIT/annotation_3d-main_003/annotation_3d-main/data/to_annotate/{frame_name}/tcmr_output.pkl"
-    annotated = f"/home/ady/CVIT/annotation_3d-main_003/annotation_3d-main/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
+    video_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/{frame_name}.mp4"
+    tcmr_output = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/tcmr_output.pkl"
+    annotated = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
 
     data = joblib.load(tcmr_output)[1]
     with open(annotated, 'rb') as fi:
         ad = pickle.load(fi)
 
     model = SMPL( SMPL_MODEL_DIR, batch_size=1, create_transl=False, gender= gender)
-
     cap = cv2.VideoCapture(video_path)
+    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    # _fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-    _fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-    video_out = cv2.VideoWriter('outpy.avi', _fourcc, 30, (1080,1920))
+
     all_poses = ad['pose']
     all_betas = ad['beta']
+    renderer = Renderer(resolution=(width, height), orig_img=True, wireframe=False)
 
+    all_frames = []
+    all_frames = [cap.read() for i in range(frame_count)]
+    return width, height, frame_count, all_frames, all_poses, all_betas, data, renderer, model
+
+
+
+
+if __name__ == '__main__':
+    width, height, frame_count, all_frames, all_poses, all_betas, data, renderer, model= initialize_rendering()
     for i in trange(frame_count):
+        pose = all_poses[i][3:72]
+        betas = all_betas[i]
+        global_orient = data['pose'][i][:3]
         frame_cam = data['orig_cam'][i]
-        pose = torch.tensor(all_poses[i][3:72]).unsqueeze(0).float()
-        betas  = torch.tensor(all_betas[i]).unsqueeze(0).float()
-        go = torch.tensor(data['pose'][i][:3]).unsqueeze(0).float()
-        out = model(global_orient = go, body_pose = pose, betas = betas[..., -1])
-        frame_verts = out.vertices[0].detach().numpy()
-        ret, frame = cap.read()
+        ret, frame = all_frames[i]
+        img, mask = render_current_frame(ret, frame, frame_cam, renderer, model, pose, betas, global_orient)
 
-        if ret:
-            height = frame.shape[0]
-            width = frame.shape[1]
-            renderer = Renderer(resolution=(width, height), orig_img=True, wireframe=False)
-            img, mask = renderer.render( frame[..., ::-1], frame_verts, cam=frame_cam, mesh_filename=None,)
-            video_out.write(img)
-            # cv2.imshow('', img)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-            plt.imshow(img)
-            plt.show()
-            # cv2.imshow('', img)
-
-    cap.release()
-    video_out.release()
-    cv2.destroyAllWindows()
-
-
+        plt.imshow(img)
+        plt.show()
 
