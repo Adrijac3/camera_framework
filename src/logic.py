@@ -38,6 +38,10 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #     self.m_iTotalframes = self.m_iFps * self.m_iDuration
         # except:
         #     print("error in opening video")
+        self.width, self.height, self.frame_count, self.all_frames, self.all_poses, self.all_betas, self.data, self.renderer, self.model = initialize_rendering()
+
+        if self.m_iFrameCounter == 0:
+            self.RenderFile(None, None, None)
 
         '''SET EVENTS'''
         self.prev_button.clicked.connect(self.FetchPrevFrame)
@@ -48,7 +52,6 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.LoadFrame(0)
 
     def LoadFrame(self, frame_number):
-
         self.m_oCap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
         ret, frame = self.m_oCap.read()
 
@@ -108,13 +111,12 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def RenderFile(self, s=None, tx=None, ty=None):
         if 1:
             i = self.m_iFrameCounter
-            width, height, frame_count, all_frames, all_poses, all_betas, data, renderer, model= initialize_rendering()
-            pose = all_poses[i][3:72]
-            betas = all_betas[i]
-            global_orient = data['pose'][i][:3]
-            frame_cam = data['orig_cam'][i]
-            ret, frame = all_frames[i]
-            img, mask = render_current_frame(ret, frame, frame_cam, renderer, model, pose, betas, global_orient)
+            pose = self.all_poses[i][3:72]
+            betas = self.all_betas[i]
+            global_orient = self.data['pose'][i][:3]
+            frame_cam = self.data['orig_cam'][i]
+            ret, frame = self.all_frames[i]
+            img, mask = render_current_frame(ret, frame, frame_cam, self.renderer, self.model, pose, betas, global_orient)
             new_img = QImage(img, img.shape[1], img.shape[0], QImage.Format_RGB888)
             pix = QPixmap.fromImage(new_img)
             pix = pix.scaled(600, 400, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
@@ -127,8 +129,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             x = msg.exec_()
 
     def getDuration(self,filename):
-        command = [
-            'ffprobe',
+        command = [ 'ffprobe',
             '-v',
             'error',
             '-show_entries',
