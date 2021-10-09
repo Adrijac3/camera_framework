@@ -140,12 +140,7 @@ def render_current_frame(ret, frame, frame_cam, renderer, model, pose, betas, gl
     return img, mask
 
 
-def initialize_rendering():
-    frame_name  = 'abhi'
-    gender = 'male'
-    video_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/{frame_name}.mp4"
-    tcmr_output = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/tcmr_output.pkl"
-    annotated = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
+def initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated):
 
     data = joblib.load(tcmr_output)[1]
     with open(annotated, 'rb') as fi:
