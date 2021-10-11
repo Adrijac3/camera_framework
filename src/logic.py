@@ -19,11 +19,6 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         super(MyWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
-        '''SET QDoubleSpinBox initial values'''
-        self.SetDoubleSpinBoxValues(self.s_input,0.1, 100.0, 0.1, 1, 0.1)
-        self.SetDoubleSpinBoxValues(self.tx_input,0.1, 100.0, 0.1, 1, 0.1)
-        self.SetDoubleSpinBoxValues(self.ty_input,0.1, 100.0, 0.1, 1, 0.1)
-
         '''SET VARIABLES'''
         self.m_fS = 0.0
         self.m_fTx = 0.0
@@ -40,12 +35,20 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # video_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/{frame_name}.mp4"
         # tcmr_output = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/tcmr_output.pkl"
         # annotated = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
-        video_path = f"/home/ady/CVIT/annotation_3d-main_003/annotation_3d-main/data/to_annotate/{frame_name}/{frame_name}.mp4"
-        tcmr_output = f"/home/ady/CVIT/annotation_3d-main_003/annotation_3d-main/data/to_annotate/{frame_name}/tcmr_output.pkl"
-        annotated = f"/home/ady/CVIT/annotation_3d-main_003/annotation_3d-main/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
+        video_path = f"../data/{frame_name}/{frame_name}.mp4"
+        tcmr_output = f"../data/{frame_name}/tcmr_output.pkl"
+        annotated = f"../data/{frame_name}/annotate/smplx_param.pkl"
 
 
         self.width, self.height, self.frame_count, self.all_frames, self.all_poses, self.all_betas, self.data, self.renderer, self.model = initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated)
+
+
+        '''SET QDoubleSpinBox initial values'''
+        frame_cam = self.data['orig_cam'][0]
+        print("default values :", frame_cam)
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, frame_cam[0])
+        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[1])
+        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[2])
 
         self.m_iTotalframes = len(self.all_frames)
         if self.m_iFrameCounter == 0:
@@ -59,11 +62,12 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # self.LoadFrame(0)
 
-    def SetDoubleSpinBoxValues(self, object_name, min_val, max_val, step, decimal, initial_val):
+    def SetDoubleSpinBoxValues(self, object_name, step, decimal, initial_val):
         object_name.setDecimals(decimal)
+        object_name.setRange(-100.0,100.0)
         object_name.setValue(initial_val)
-        object_name.setMinimum(min_val)
-        object_name.setMaximum(max_val)
+        # object_name.setMinimum(min_val)
+        # object_name.setMaximum(max_val)
         object_name.setSingleStep(step)
 
     def LoadFrame(self, frame_number):
