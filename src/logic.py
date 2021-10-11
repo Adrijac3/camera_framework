@@ -19,6 +19,11 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         super(MyWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        '''SET QDoubleSpinBox initial values'''
+        self.SetDoubleSpinBoxValues(self.s_input,0.1, 100.0, 0.1, 1, 0.1)
+        self.SetDoubleSpinBoxValues(self.tx_input,0.1, 100.0, 0.1, 1, 0.1)
+        self.SetDoubleSpinBoxValues(self.ty_input,0.1, 100.0, 0.1, 1, 0.1)
+
         '''SET VARIABLES'''
         self.m_fS = 0.0
         self.m_fTx = 0.0
@@ -30,19 +35,15 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.m_iDuration = 0
         # self.m_sVideo_path = '../data/video.mp4'
         self.m_sVideo_path = None
-
-        # try:
-        #     self.m_oCap = cv2.VideoCapture(self.m_sVideo_path)
-        #     self.m_iFps = int(self.m_oCap.get(cv2.CAP_PROP_FPS))
-        #     self.m_iDuration = self.getDuration(self.m_sVideo_path)
-        #     self.m_iTotalframes = self.m_iFps * self.m_iDuration
-        # except:
-        #     print("error in opening video")
         frame_name  = 'abhi'
         gender = 'male'
-        video_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/{frame_name}.mp4"
-        tcmr_output = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/tcmr_output.pkl"
-        annotated = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
+        # video_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/{frame_name}.mp4"
+        # tcmr_output = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/tcmr_output.pkl"
+        # annotated = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
+        video_path = f"/home/ady/CVIT/annotation_3d-main_003/annotation_3d-main/data/to_annotate/{frame_name}/{frame_name}.mp4"
+        tcmr_output = f"/home/ady/CVIT/annotation_3d-main_003/annotation_3d-main/data/to_annotate/{frame_name}/tcmr_output.pkl"
+        annotated = f"/home/ady/CVIT/annotation_3d-main_003/annotation_3d-main/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
+
 
         self.width, self.height, self.frame_count, self.all_frames, self.all_poses, self.all_betas, self.data, self.renderer, self.model = initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated)
 
@@ -57,6 +58,13 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.params_button.clicked.connect(self.ChangeParameters)
 
         # self.LoadFrame(0)
+
+    def SetDoubleSpinBoxValues(self, object_name, min_val, max_val, step, decimal, initial_val):
+        object_name.setDecimals(decimal)
+        object_name.setValue(initial_val)
+        object_name.setMinimum(min_val)
+        object_name.setMaximum(max_val)
+        object_name.setSingleStep(step)
 
     def LoadFrame(self, frame_number):
         self.m_oCap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
@@ -103,20 +111,22 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         print("frame number = ", self.m_iFrameCounter)
 
     def ChangeParameters(self):
-        if len(self.s_input.toPlainText() ) == 0 and len(self.tx_input.toPlainText()) == 0 and len(self.ty_input.toPlainText()) == 0:
-            msg = QMessageBox()
-            msg.setWindowTitle("Empty")
-            msg.setText("No parameters set to change")
-            msg.setIcon(QMessageBox.Warning)
-            x = msg.exec_()
+        # if len(self.s_input.toPlainText() ) == 0 and len(self.tx_input.toPlainText()) == 0 and len(self.ty_input.toPlainText()) == 0:
+            # msg = QMessageBox()
+            # msg.setWindowTitle("Empty")
+            # msg.setText("No parameters set to change")
+            # msg.setIcon(QMessageBox.Warning)
+            # x = msg.exec_()
+        if 0:
+            pass
         else:
-            if len(self.s_input.toPlainText() ) != 0:
-                self.m_fS = self.s_input.toPlainText()
-            if len(self.tx_input.toPlainText() ) != 0:
-                self.m_fTx = self.tx_input.toPlainText()
-            if len(self.ty_input.toPlainText() ) != 0:
-                self.m_fTy = self.ty_input.toPlainText()
-            self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
+            # if len(self.s_input.toPlainText() ) != 0:
+                self.m_fS = self.s_input.value()
+            # if len(self.tx_input.toPlainText() ) != 0:
+                self.m_fTx = self.tx_input.value()
+            # if len(self.ty_input.toPlainText() ) != 0:
+                self.m_fTy = self.ty_input.value()
+                self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
 
     def RenderFile(self, i = None, s=None, tx=None, ty=None):
         if 1:
