@@ -1,7 +1,7 @@
 '''QT specific imports'''
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QMessageBox, QDialog, QLabel, QApplication
-from PyQt5.QtGui  import QPixmap, QImage
+from PyQt5.QtGui  import QPixmap, QImage, QColor
 
 ''' Other python module imports'''
 import sys, cv2, math, os
@@ -24,10 +24,11 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.m_fTx = 0.0
         self.m_fTy = 0.0
         self.m_iFrameCounter = 0
-        self.m_oCap = None
-        self.m_iFps = 0
-        self.m_iTotalframes = 0
-        self.m_iDuration = 0
+        self.m_pixmapPix = None
+        # self.m_oCap = None
+        # self.m_iFps = 0
+        # self.m_iTotalframes = 0
+        # self.m_iDuration = 0
         # self.m_sVideo_path = '../data/video.mp4'
         self.m_sVideo_path = None
         frame_name  = 'abhi'
@@ -59,6 +60,28 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.next_button.clicked.connect(self.FetchNextFrame)
         # self.render_button.clicked.connect(self.RenderFile)
         self.params_button.clicked.connect(self.ChangeParameters)
+        self.display_label.mousePressEvent = self.Getxy
+        # self.display_label.left_click.connect(self.image_clicked)
+
+    def Getxy(self, event):
+        x = event.pos().x()
+        y = event.pos().y()
+        print("Global pos: ", x,y)
+        r = self.m_pixmapPix.rect()
+        x0, y0 = r.x(), r.y()
+        x1, y1 = x0+r.width(), y0+r.height()
+
+        # Check we clicked on the pixmap
+        if x >= x0 and x < x1 and y >= y0 and y < y1:
+
+            # emit position relative to pixmap bottom-left corner
+            x_relative = (x - x0) / (x1 - x0)
+            y_relative = (y - y0) / (y1 - y0)
+
+            print("Local pos: ", x_relative, y_relative)
+        # return x, y
+
+    
 
         # self.LoadFrame(0)
 
@@ -151,9 +174,9 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             ret, frame = self.all_frames[i]
             img, mask = render_current_frame(ret, frame, frame_cam, self.renderer, self.model, pose, betas, global_orient)
             new_img = QImage(img, img.shape[1], img.shape[0], QImage.Format_RGB888)
-            pix = QPixmap.fromImage(new_img)
-            pix = pix.scaled(600, 400, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-            self.display_label.setPixmap(pix)
+            self.m_pixmapPix = QPixmap.fromImage(new_img)
+            self.m_pixmapPix = self.m_pixmapPix.scaled(600, 400, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            self.display_label.setPixmap(self.m_pixmapPix)
         else:
             msg = QMessageBox()
             msg.setWindowTitle("Empty")
