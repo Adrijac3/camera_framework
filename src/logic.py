@@ -25,11 +25,6 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.m_fTy = 0.0
         self.m_iFrameCounter = 0
         self.m_pixmapPix = None
-        # self.m_oCap = None
-        # self.m_iFps = 0
-        # self.m_iTotalframes = 0
-        # self.m_iDuration = 0
-        # self.m_sVideo_path = '../data/video.mp4'
         self.m_sVideo_path = None
         frame_name  = 'abhi'
         gender = 'male'
@@ -43,13 +38,14 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.width, self.height, self.frame_count, self.all_frames, self.all_poses, self.all_betas, self.data, self.renderer, self.model = initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated)
 
+        # self.display_label.setGeometry(QtCore.QRect(20, 20, self.width, self.height))
 
         '''SET QDoubleSpinBox initial values'''
         frame_cam = self.data['orig_cam'][0]
         print("default values :", frame_cam)
-        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, frame_cam[0])
-        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[1])
-        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[2])
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, 1)
+        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
+        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
 
         self.m_iTotalframes = len(self.all_frames)
         if self.m_iFrameCounter == 0:
@@ -58,7 +54,9 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         '''SET EVENTS'''
         self.prev_button.clicked.connect(self.FetchPrevFrame)
         self.next_button.clicked.connect(self.FetchNextFrame)
-        # self.render_button.clicked.connect(self.RenderFile)
+        self.s_input.valueChanged.connect(self.ValueChange)
+        self.tx_input.valueChanged.connect(self.ValueChange)
+        self.ty_input.valueChanged.connect(self.ValueChange)
         self.params_button.clicked.connect(self.ChangeParameters)
         self.display_label.mousePressEvent = self.Getxy
         # self.display_label.left_click.connect(self.image_clicked)
@@ -79,11 +77,17 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             y_relative = (y - y0) / (y1 - y0)
 
             print("Local pos: ", x_relative, y_relative)
-        # return x, y
 
     
 
         # self.LoadFrame(0)
+
+    def ValueChange(self):
+        self.m_fS = self.s_input.value()
+        self.m_fTx = self.tx_input.value()
+        self.m_fTy = self.ty_input.value()
+        self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
+
 
     def SetDoubleSpinBoxValues(self, object_name, step, decimal, initial_val):
         object_name.setDecimals(decimal)
@@ -121,7 +125,12 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             print("resetting frame from ", self.m_iFrameCounter," to 0")
             self.m_iFrameCounter = 0
 
-        # self.LoadFrame(self.m_iFrameCounter)
+        frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
+
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
+        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
+
         self.RenderFile(self.m_iFrameCounter, None, None, None)
         print("frame number = ", self.m_iFrameCounter)
 
@@ -132,6 +141,11 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             print("resetting frame from ", self.m_iFrameCounter," to ", self.m_iTotalframes)
             self.m_iFrameCounter = self.m_iTotalframes
 
+        frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
+
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
+        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
         # self.LoadFrame(self.m_iFrameCounter)
         self.RenderFile(self.m_iFrameCounter, None, None, None)
 
