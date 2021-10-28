@@ -29,6 +29,8 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.m_sVideo_path = None
         frame_name  = 'abhi'
         gender = 'male'
+        self.label_width = 751
+        self.label_height = 351
         self.prev_button_offset = 0
         self.frame_info = "0/total"
         # video_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/{frame_name}.mp4"
@@ -43,7 +45,8 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         print("video width and height fetched: ", self.width, self.height)
 
-        # self.display_label.setGeometry(QtCore.QRect(20, 20, self.video_width, self.video_height))
+        # set qlbael dimensions here
+        self.display_label.setGeometry(QtCore.QRect(20, 20, self.label_width, self.label_height))
 
         '''SET QDoubleSpinBox initial values'''
         frame_cam = self.data['orig_cam'][0]
@@ -200,7 +203,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             img, mask = render_current_frame(ret, frame, frame_cam, self.renderer, self.model, pose, betas, global_orient)
             new_img = QImage(img, img.shape[1], img.shape[0], QImage.Format_RGB888)
             self.m_pixmapPix = QPixmap.fromImage(new_img)
-            self.m_pixmapPix = self.m_pixmapPix.scaled(751,371, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            self.m_pixmapPix = self.m_pixmapPix.scaled(self.label_width, self.label_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             self.display_label.setPixmap(self.m_pixmapPix)
 
             self.frame_info = str(i) + "/" + str(self.m_iTotalframes)
