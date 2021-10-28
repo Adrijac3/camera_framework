@@ -1,6 +1,6 @@
 '''QT specific imports'''
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QMessageBox, QDialog, QLabel, QApplication
+from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5.QtWidgets import QMessageBox, QDialog, QLabel, QApplication, QWidget
 from PyQt5.QtGui  import QPixmap, QImage, QColor
 
 ''' Other python module imports'''
@@ -20,14 +20,17 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
 
         '''SET VARIABLES'''
+        self.x = 0
         self.m_fS = 0.0
         self.m_fTx = 0.0
         self.m_fTy = 0.0
         self.m_iFrameCounter = 0
         self.m_pixmapPix = None
-        self.m_sVideo_path = None
+        # self.m_sVideo_path = None
         frame_name  = 'abhi'
         gender = 'male'
+        self.prev_button_offset = 0
+        self.frame_info = "0/total"
         # video_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/{frame_name}.mp4"
         # tcmr_output = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/tcmr_output.pkl"
         # annotated = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
@@ -36,18 +39,23 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         annotated = f"../data/{frame_name}/annotate/smplx_param.pkl"
 
 
-        self.width, self.height, self.frame_count, self.all_frames, self.all_poses, self.all_betas, self.data, self.renderer, self.model = initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated)
+        self.width, self.height, self.m_iTotalframes, self.all_frames, self.all_poses, self.all_betas, self.data, self.renderer, self.model = initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated)
+        
+        print("video width and height fetched: ", self.width, self.height)
 
-        # self.display_label.setGeometry(QtCore.QRect(20, 20, self.width, self.height))
+        # self.display_label.setGeometry(QtCore.QRect(20, 20, self.video_width, self.video_height))
 
         '''SET QDoubleSpinBox initial values'''
         frame_cam = self.data['orig_cam'][0]
         print("default values :", frame_cam)
-        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, 1)
-        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
-        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
+        self.m_fS = 1
+        self.m_fTx = frame_cam[2]
+        self.m_fTy = frame_cam[3]
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, self.m_fTx)
+        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, self.m_fTy)
 
-        self.m_iTotalframes = len(self.all_frames)
+        # self.m_iTotalframes = len(self.all_frames)
         if self.m_iFrameCounter == 0:
             self.RenderFile(0, None, None, None)
 
@@ -62,6 +70,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.display_label.left_click.connect(self.image_clicked)
 
     def Getxy(self, event):
+        # self.s_input.setFocusPolicy(QtCore.Qt.NoFocus)
         x = event.pos().x()
         y = event.pos().y()
         print("Global pos: ", x,y)
@@ -79,14 +88,36 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             print("Local pos: ", x_relative, y_relative)
 
     
+    def wheelEvent(self,event):
+        self.x =self.x + event.angleDelta().y()/120
+        print("wheel: ",self.x)
+        delta = event.angleDelta().y()
+        self.x += (delta and delta // abs(delta))
+        print("wheel with abs: ",self.x)
 
-        # self.LoadFrame(0)
+    # def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+    #     return super().keyPressEvent(a0)
+
+    # def keyPressEvent(self, event):
+    #     self.s_input.setFocusPolicy(QtCore.Qt.NoFocus)
+    #     if event.key() == QtCore.Qt.Key_Space:
+    #         print("space pressed")
+    #     if event.key() == QtCore.Qt.Key_R:
+    #         print("overriden R from spinbox")
 
     def ValueChange(self):
-        self.m_fS = self.s_input.value()
-        self.m_fTx = self.tx_input.value()
-        self.m_fTy = self.ty_input.value()
-        self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
+        changed = False
+        if self.m_fS != self.s_input.value():
+            self.m_fS = self.s_input.value()
+            changed = True
+        if self.m_fTx != self.s_input.value():
+            self.m_fTx = self.tx_input.value()
+            changed = True
+        if self.m_fTy != self.s_input.value():
+            self.m_fTy = self.ty_input.value()
+            changed = True
+        if changed == True:
+            self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
 
 
     def SetDoubleSpinBoxValues(self, object_name, step, decimal, initial_val):
@@ -96,26 +127,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # object_name.setMinimum(min_val)
         # object_name.setMaximum(max_val)
         object_name.setSingleStep(step)
-
-    def LoadFrame(self, frame_number):
-        self.m_oCap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-        ret, frame = self.m_oCap.read()
-
-        if ret:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
-            pix = QPixmap.fromImage(img)
-            pix = pix.scaled(600, 400, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-            self.display_label.setPixmap(pix)
-            # cv2.imshow('frame',frame)
-        else:
-            dlg = QDialog()
-            dlg.resize(200,100)
-            lbl = QLabel(dlg)
-            lbl.setText("Failed to fetch frame")
-            lbl.move(10,50)
-            dlg.setWindowTitle("Error")
-            dlg.exec_()
+        object_name.setKeyboardTracking(False)
 
     def FetchPrevFrame(self):
 
@@ -146,7 +158,6 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
         self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
         self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
-        # self.LoadFrame(self.m_iFrameCounter)
         self.RenderFile(self.m_iFrameCounter, None, None, None)
 
         print("frame number = ", self.m_iFrameCounter)
@@ -171,7 +182,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def RenderFile(self, i = None, s=None, tx=None, ty=None):
         if 1:
-            print(i)
+            print("renderfile i value: ", i)
             pose = self.all_poses[i][3:72]
             betas = self.all_betas[i]
             global_orient = self.data['pose'][i][:3]
@@ -181,16 +192,21 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 s = float(s)
                 tx = float(tx)
                 ty = float(ty)
-                print(s, tx, ty)
+                print("s,tx,ty:", s, tx, ty)
                 frame_cam = [s*frame_cam[0], s*frame_cam[1], tx, ty]
-                print(frame_cam)
+                print("frame cam:", frame_cam)
 
             ret, frame = self.all_frames[i]
             img, mask = render_current_frame(ret, frame, frame_cam, self.renderer, self.model, pose, betas, global_orient)
             new_img = QImage(img, img.shape[1], img.shape[0], QImage.Format_RGB888)
             self.m_pixmapPix = QPixmap.fromImage(new_img)
-            self.m_pixmapPix = self.m_pixmapPix.scaled(600, 400, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            self.m_pixmapPix = self.m_pixmapPix.scaled(751,371, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             self.display_label.setPixmap(self.m_pixmapPix)
+
+            self.frame_info = str(i) + "/" + str(self.m_iTotalframes)
+
+            self.frame_info_label.setText(self.frame_info)
+
         else:
             msg = QMessageBox()
             msg.setWindowTitle("Empty")
