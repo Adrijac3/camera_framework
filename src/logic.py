@@ -48,7 +48,9 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     print("signal render function with tx value increased by 1 step")
                 elif e.key() == 16777234:
                     print("signal render function with ty value decreased by 1 step")
-
+            
+            else:
+                return super().keyPressEvent(e)
 
     '''SETUP spinboxes manually for subclassing keypress'''
     s_input = None
