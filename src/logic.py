@@ -1,7 +1,10 @@
 '''QT specific imports'''
 from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtWidgets import QMessageBox, QDialog, QLabel, QApplication, QWidget
-from PyQt5.QtGui  import QPixmap, QImage, QColor
+# from PyQt5.QtWidgets import QMessageBox, QDialog, QLabel, QApplication, QWidget
+# from PyQt5.QtGui  import QPixmap, QImage, QColor
+
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 ''' Other python module imports'''
 import sys, cv2, math, os
@@ -11,19 +14,77 @@ from subprocess import  check_output, CalledProcessError, STDOUT
 from ui import Ui_MainWindow
 from rdemo import initialize_rendering, render_current_frame
 
-
 class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+
+    class CustomSpinBox(QDoubleSpinBox):
+        
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+        def keyPressEvent(self, e):
+            # print(e.key())
+            # print("inside subclass keypress")
+            self.s_input_fetched, self.tx_input_fetched, self.ty_input_fetched = MyWindow.GetSpinBoxObject()
+            self.s, self.tx, self.ty = MyWindow.GetParameters()
+
+            check_s = self.s_input_fetched.hasFocus()
+            check_tx = self.tx_input_fetched.hasFocus()
+            check_ty = self.ty_input_fetched.hasFocus()
+
+            # print(check_s, check_tx, check_ty)
+
+            if check_s == True:
+                if e.key() == 16777236:
+                    print("signal render function with s value increased by 1 step")
+                elif e.key() == 16777234:
+                    print("signal render function with s value decreased by 1 step")
+            if check_tx == True:
+                if e.key() == 16777236:
+                    print("signal render function with tx value increased by 1 step")
+                elif e.key() == 16777234:
+                    print("signal render function with ty value decreased by 1 step")
+            if check_ty == True:
+                if e.key() == 16777236:
+                    print("signal render function with tx value increased by 1 step")
+                elif e.key() == 16777234:
+                    print("signal render function with ty value decreased by 1 step")
+
+
+    '''SETUP spinboxes manually for subclassing keypress'''
+    s_input = None
+    tx_input = None
+    ty_input = None
+
+    m_fS = 0.0
+    m_fTx = 0.0
+    m_fTy = 0.0
+
+
 
     def __init__(self, *args, **kwargs):
 
         super(MyWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        '''SETUP spinboxes manually for subclassing keypress'''
+        MyWindow.s_input = self.CustomSpinBox(self.centralwidget)
+        MyWindow.s_input.setGeometry(QtCore.QRect(210, 440, 69, 31))
+        MyWindow.s_input.setObjectName("s_input")
+        MyWindow.tx_input = self.CustomSpinBox(self.centralwidget)
+        MyWindow.tx_input.setGeometry(QtCore.QRect(350, 440, 69, 31))
+        MyWindow.tx_input.setObjectName("tx_input")
+        MyWindow.ty_input = self.CustomSpinBox(self.centralwidget)
+        MyWindow.ty_input.setGeometry(QtCore.QRect(540, 440, 69, 31))
+        MyWindow.ty_input.setObjectName("ty_input")
+
+        # MyWindow.s_input.focusInEvent
+
+
         '''SET VARIABLES'''
         self.x = 0
-        self.m_fS = 0.0
-        self.m_fTx = 0.0
-        self.m_fTy = 0.0
+        # MyWindow.m_fS = 0.0
+        # MyWindow.m_fTx = 0.0
+        # MyWindow.m_fTy = 0.0
         self.m_iFrameCounter = 0
         self.m_pixmapPix = None
         # self.m_sVideo_path = None
@@ -51,12 +112,12 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         '''SET QDoubleSpinBox initial values'''
         frame_cam = self.data['orig_cam'][0]
         print("default values :", frame_cam)
-        self.m_fS = 1
-        self.m_fTx = frame_cam[2]
-        self.m_fTy = frame_cam[3]
-        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
-        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, self.m_fTx)
-        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, self.m_fTy)
+        MyWindow.m_fS = 1
+        MyWindow.m_fTx = frame_cam[2]
+        MyWindow.m_fTy = frame_cam[3]
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, MyWindow.m_fS)
+        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, MyWindow.m_fTx)
+        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, MyWindow.m_fTy)
 
         # self.m_iTotalframes = len(self.all_frames)
         if self.m_iFrameCounter == 0:
@@ -71,6 +132,13 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.params_button.clicked.connect(self.ChangeParameters)
         self.display_label.mousePressEvent = self.Getxy
         # self.display_label.left_click.connect(self.image_clicked)
+    @staticmethod
+    def GetSpinBoxObject():
+        return MyWindow.s_input, MyWindow.tx_input, MyWindow.ty_input
+
+    @staticmethod
+    def GetParameters():
+        return MyWindow.m_fS, MyWindow.m_fTx, MyWindow.m_fTy
 
     def Getxy(self, event):
         # self.s_input.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -98,29 +166,19 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.x += (delta and delta // abs(delta))
         print("wheel with abs: ",self.x)
 
-    # def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
-    #     return super().keyPressEvent(a0)
-
-    # def keyPressEvent(self, event):
-    #     self.s_input.setFocusPolicy(QtCore.Qt.NoFocus)
-    #     if event.key() == QtCore.Qt.Key_Space:
-    #         print("space pressed")
-    #     if event.key() == QtCore.Qt.Key_R:
-    #         print("overriden R from spinbox")
-
     def ValueChange(self):
         changed = False
-        if self.m_fS != self.s_input.value():
-            self.m_fS = self.s_input.value()
+        if MyWindow.m_fS != self.s_input.value():
+            MyWindow.m_fS = self.s_input.value()
             changed = True
-        if self.m_fTx != self.s_input.value():
-            self.m_fTx = self.tx_input.value()
+        if MyWindow.m_fTx != self.s_input.value():
+            MyWindow.m_fTx = self.tx_input.value()
             changed = True
-        if self.m_fTy != self.s_input.value():
-            self.m_fTy = self.ty_input.value()
+        if MyWindow.m_fTy != self.s_input.value():
+            MyWindow.m_fTy = self.ty_input.value()
             changed = True
         if changed == True:
-            self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
+            self.RenderFile(self.m_iFrameCounter, MyWindow.m_fS, MyWindow.m_fTx, MyWindow.m_fTy)
 
 
     def SetDoubleSpinBoxValues(self, object_name, step, decimal, initial_val):
@@ -130,7 +188,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # object_name.setMinimum(min_val)
         # object_name.setMaximum(max_val)
         object_name.setSingleStep(step)
-        object_name.setKeyboardTracking(False)
+        # object_name.setKeyboardTracking(False)
 
     def FetchPrevFrame(self):
 
@@ -142,7 +200,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
 
-        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, MyWindow.m_fS)
         self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
         self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
 
@@ -158,7 +216,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
 
-        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, MyWindow.m_fS)
         self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
         self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
         self.RenderFile(self.m_iFrameCounter, None, None, None)
@@ -166,23 +224,14 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         print("frame number = ", self.m_iFrameCounter)
 
     def ChangeParameters(self):
-        # if len(self.s_input.toPlainText() ) == 0 and len(self.tx_input.toPlainText()) == 0 and len(self.ty_input.toPlainText()) == 0:
-            # msg = QMessageBox()
-            # msg.setWindowTitle("Empty")
-            # msg.setText("No parameters set to change")
-            # msg.setIcon(QMessageBox.Warning)
-            # x = msg.exec_()
         if 0:
             pass
         else:
-            # if len(self.s_input.toPlainText() ) != 0:
-                self.m_fS = self.s_input.value()
-            # if len(self.tx_input.toPlainText() ) != 0:
-                self.m_fTx = self.tx_input.value()
-            # if len(self.ty_input.toPlainText() ) != 0:
-                self.m_fTy = self.ty_input.value()
-                self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
-
+                MyWindow.m_fS = self.s_input.value()
+                MyWindow.m_fTx = self.tx_input.value()
+                MyWindow.m_fTy = self.ty_input.value()
+                self.RenderFile(self.m_iFrameCounter, MyWindow.m_fS, MyWindow.m_fTx, MyWindow.m_fTy)
+                
     def RenderFile(self, i = None, s=None, tx=None, ty=None):
         if 1:
             print("renderfile i value: ", i)
