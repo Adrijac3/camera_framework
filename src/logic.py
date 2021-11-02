@@ -27,12 +27,12 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         def keyPressEvent(self, e):
             print(e.key())
             print("inside subclass keypress")
-            self.s_input_fetched, self.tx_input_fetched, self.ty_input_fetched = MyWindow.GetSpinBoxObject()
+            MyWindow.s_input_fetched, MyWindow.tx_input_fetched, MyWindow.ty_input_fetched = MyWindow.GetSpinBoxObject()
             # self.s, self.tx, self.ty = MyWindow.GetParameters()
 
-            check_s = self.s_input_fetched.hasFocus()
-            check_tx = self.tx_input_fetched.hasFocus()
-            check_ty = self.ty_input_fetched.hasFocus()
+            check_s = MyWindow.s_input_fetched.hasFocus()
+            check_tx = MyWindow.tx_input_fetched.hasFocus()
+            check_ty = MyWindow.ty_input_fetched.hasFocus()
 
             # print(check_s, check_tx, check_ty)
 
@@ -119,9 +119,9 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.m_fS = 1
         self.m_fTx = frame_cam[2]
         self.m_fTy = frame_cam[3]
-        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
-        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, self.m_fTx)
-        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, self.m_fTy)
+        self.SetDoubleSpinBoxValues(MyWindow.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(MyWindow.tx_input, 0.01, 5, self.m_fTx)
+        self.SetDoubleSpinBoxValues(MyWindow.ty_input,0.01, 5, self.m_fTy)
 
         # self.m_iTotalframes = len(self.all_frames)
         if self.m_iFrameCounter == 0:
@@ -135,6 +135,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         MyWindow.ty_input.valueChanged.connect(self.ValueChange)
         self.params_button.clicked.connect(self.ChangeParameters)
         self.display_label.mousePressEvent = self.Getxy
+        self.annotate.stateChanged.connect(self.CheckAnnotation)
         MyWindow.s_input.sig.connect(self.ReceiveSignal)
         MyWindow.tx_input.sig.connect(self.ReceiveSignal)
         MyWindow.ty_input.sig.connect(self.ReceiveSignal)
@@ -153,7 +154,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     #     return self.m_fS, self.m_fTx, self.m_fTy
 
     def Getxy(self, event):
-        # self.s_input.setFocusPolicy(QtCore.Qt.NoFocus)
+        # MyWindow.s_input.setFocusPolicy(QtCore.Qt.NoFocus)
         x = event.pos().x()
         y = event.pos().y()
         print("Global pos: ", x,y)
@@ -180,14 +181,14 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def ValueChange(self):
         changed = False
-        if self.m_fS != self.s_input.value():
-            self.m_fS = self.s_input.value()
+        if self.m_fS != MyWindow.s_input.value():
+            self.m_fS = MyWindow.s_input.value()
             changed = True
-        if self.m_fTx != self.s_input.value():
-            self.m_fTx = self.tx_input.value()
+        if self.m_fTx != MyWindow.s_input.value():
+            self.m_fTx = MyWindow.tx_input.value()
             changed = True
-        if self.m_fTy != self.s_input.value():
-            self.m_fTy = self.ty_input.value()
+        if self.m_fTy != MyWindow.s_input.value():
+            self.m_fTy = MyWindow.ty_input.value()
             changed = True
         if changed == True:
             self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
@@ -212,9 +213,9 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
 
-        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
-        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
-        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
+        self.SetDoubleSpinBoxValues(MyWindow.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(MyWindow.tx_input, 0.01, 5, frame_cam[2])
+        self.SetDoubleSpinBoxValues(MyWindow.ty_input,0.01, 5, frame_cam[3])
 
         self.RenderFile(self.m_iFrameCounter, None, None, None)
         print("frame number = ", self.m_iFrameCounter)
@@ -228,9 +229,9 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
 
-        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
-        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
-        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
+        self.SetDoubleSpinBoxValues(MyWindow.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(MyWindow.tx_input, 0.01, 5, frame_cam[2])
+        self.SetDoubleSpinBoxValues(MyWindow.ty_input,0.01, 5, frame_cam[3])
         self.RenderFile(self.m_iFrameCounter, None, None, None)
 
         print("frame number = ", self.m_iFrameCounter)
@@ -239,9 +240,9 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if 0:
             pass
         else:
-                self.m_fS = self.s_input.value()
-                self.m_fTx = self.tx_input.value()
-                self.m_fTy = self.ty_input.value()
+                self.m_fS = MyWindow.s_input.value()
+                self.m_fTx = MyWindow.tx_input.value()
+                self.m_fTy = MyWindow.ty_input.value()
                 self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
                 
     def RenderFile(self, i = None, s=None, tx=None, ty=None):
@@ -277,6 +278,13 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             msg.setText("Render file not available")
             msg.setIcon(QMessageBox.Warning)
             x = msg.exec_()
+
+    def CheckAnnotation(self, state):
+        if state == QtCore.Qt.Checked:
+            print("Annotation mode")
+        else:
+            print("Normal viewing mode")
+        
 
 def main():
     app = QApplication(sys.argv)
