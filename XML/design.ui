@@ -108,7 +108,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Change Parameters</string>
+     <string>Dump Parameters</string>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="s_input">
@@ -152,6 +152,19 @@
     </property>
     <property name="text">
      <string>0/0</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="annotate">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>410</y>
+      <width>86</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>annotate</string>
     </property>
    </widget>
   </widget>
