@@ -18,57 +18,58 @@ from rdemo import Renderer, initialize_rendering, render_current_frame
 class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     class CustomSpinBox(QDoubleSpinBox):
-        
+
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-        
+
         sig = QtCore.pyqtSignal(str)
 
         def keyPressEvent(self, e):
-            print(e.key())
-            print("inside subclass keypress")
-            MyWindow.s_input_fetched, MyWindow.tx_input_fetched, MyWindow.ty_input_fetched = MyWindow.GetSpinBoxObject()
-            # self.s, self.tx, self.ty = MyWindow.GetParameters()
+            self.s_input_fetched, self.tx_input_fetched, self.ty_input_fetched = MyWindow.GetSpinBoxObject()
 
-            check_s = MyWindow.s_input_fetched.hasFocus()
-            check_tx = MyWindow.tx_input_fetched.hasFocus()
-            check_ty = MyWindow.ty_input_fetched.hasFocus()
+            # check_s = self.s_input_fetched.hasFocus()
+            # check_tx = self.tx_input_fetched.hasFocus()
+            # check_ty = self.ty_input_fetched.hasFocus()
 
-            # print(check_s, check_tx, check_ty)
+            if e.key() == 68:
+                self.sig.emit("tx+")
+            elif e.key() == 65:
+                self.sig.emit("tx-")
+            elif e.key() == 83:
+                self.sig.emit("ty+")
+            elif e.key() == 87:
+                self.sig.emit("ty-")
+            elif e.key() == 81:
+                self.sig.emit("s+")
+            elif e.key() == 69:
+                self.sig.emit("s-")
 
-            if check_s == True:
-                if e.key() == 16777236:
-                    print("signal render function with s value increased by 1 step")
-                    self.sig.emit("s+")
-                elif e.key() == 16777234:
-                    print("signal render function with s value decreased by 1 step")
-                    self.sig.emit("s-")
-            if check_tx == True:
-                if e.key() == 16777236:
-                    print("signal render function with tx value increased by 1 step")
-                    self.sig.emit("tx+")
-                elif e.key() == 16777234:
-                    print("signal render function with ty value decreased by 1 step")
-                    self.sig.emit("tx-")
-            if check_ty == True:
-                if e.key() == 16777236:
-                    print("signal render function with tx value increased by 1 step")
-                    self.sig.emit("ty+")
-                elif e.key() == 16777234:
-                    print("signal render function with ty value decreased by 1 step")
-                    self.sig.emit("ty-")
-            if e.key() == 16777216:
-                sys.exit()
-            if e.key() != 16777234 and e.key() != 16777236:
-                return super().keyPressEvent(e)
+           # if check_s == True:
+            # if check_tx == True:
+            #     if e.key() == 16777236:
+            #         print("signal render function with tx value increased by 1 step")
+            #         self.sig.emit("tx+")
+            #     elif e.key() == 16777234:
+            #         print("signal render function with ty value decreased by 1 step")
+            #         self.sig.emit("tx-")
+            # if check_ty == True:
+            #     if e.key() == 16777236:
+            #         print("signal render function with tx value increased by 1 step")
+            #         self.sig.emit("ty+")
+            #     elif e.key() == 16777234:
+            #         print("signal render function with ty value decreased by 1 step")
+            #         self.sig.emit("ty-")
+            # if e.key() == 16777216:
+            #     sys.exit()
+            # if e.key() != 16777234 and e.key() != 16777236:
+            #     return super().keyPressEvent(e)
 
     '''DEFINE spinboxes manually for subclassing keypress'''
     s_input = None
     tx_input = None
     ty_input = None
-    
-    def __init__(self, *args, **kwargs):
 
+    def __init__(self, *args, **kwargs):
         super(MyWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
@@ -94,20 +95,22 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.m_sVideo_path = None
         frame_name  = 'abhi'
         gender = 'male'
-        self.label_width = 751
-        self.label_height = 351
+        self.label_width = 640
+        self.label_height = 360
         self.prev_button_offset = 0
         self.frame_info = "0/total"
-        # video_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/{frame_name}.mp4"
-        # tcmr_output = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/tcmr_output.pkl"
-        # annotated = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
-        video_path = f"../data/{frame_name}/{frame_name}.mp4"
-        tcmr_output = f"../data/{frame_name}/tcmr_output.pkl"
-        annotated = f"../data/{frame_name}/annotate/smplx_param.pkl"
+        self.dump_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/Archive/{frame_name}/camera_parameters_annot.pkl"
+        video_path = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/{frame_name}.mp4"
+        tcmr_output = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/tcmr_output.pkl"
+        annotated = f"/Users/coreqode/Desktop/00.00-ObsUniv/24-annotation/annotation_3d/data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
 
+        # video_path = f"../data/{frame_name}/{frame_name}.mp4"
+        # tcmr_output = f"../data/{frame_name}/tcmr_output.pkl"
+        # annotated = f"../data/{frame_name}/annotate/smplx_param.pkl"
 
         self.width, self.height, self.m_iTotalframes, self.all_frames, self.all_poses, self.all_betas, self.data, self.renderer, self.model = initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated)
-        
+
+        self.ratio =  self.width / self.height
         print("video width and height fetched: ", self.width, self.height)
 
         # set qlbael dimensions here
@@ -115,17 +118,17 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         '''SET QDoubleSpinBox initial values'''
         frame_cam = self.data['orig_cam'][0]
-        print("default values :", frame_cam)
-        self.m_fS = 1
+        # print("default values :", frame_cam)
+        self.m_fS = frame_cam[0]
         self.m_fTx = frame_cam[2]
         self.m_fTy = frame_cam[3]
-        self.SetDoubleSpinBoxValues(MyWindow.s_input, 0.01, 5, self.m_fS)
-        self.SetDoubleSpinBoxValues(MyWindow.tx_input, 0.01, 5, self.m_fTx)
-        self.SetDoubleSpinBoxValues(MyWindow.ty_input,0.01, 5, self.m_fTy)
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, self.m_fTx)
+        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, self.m_fTy)
 
         # self.m_iTotalframes = len(self.all_frames)
         if self.m_iFrameCounter == 0:
-            self.RenderFile(0, None, None, None)
+            self.RenderFile(first_frame = True)
 
         '''SET EVENTS'''
         self.prev_button.clicked.connect(self.FetchPrevFrame)
@@ -133,51 +136,80 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         MyWindow.s_input.valueChanged.connect(self.ValueChange)
         MyWindow.tx_input.valueChanged.connect(self.ValueChange)
         MyWindow.ty_input.valueChanged.connect(self.ValueChange)
-        self.params_button.clicked.connect(self.ChangeParameters)
+        self.dump_button.clicked.connect(self.dump_data)
         self.display_label.mousePressEvent = self.Getxy
-        self.annotate.stateChanged.connect(self.CheckAnnotation)
         MyWindow.s_input.sig.connect(self.ReceiveSignal)
         MyWindow.tx_input.sig.connect(self.ReceiveSignal)
         MyWindow.ty_input.sig.connect(self.ReceiveSignal)
-    
+
     @QtCore.pyqtSlot(str)
     def ReceiveSignal(self,val):
         print("signal received: ", val)
+        if val == 'tx++':
+            self.m_fTx += 0.1
+        if val == 'tx--':
+            self.m_fTx -= 0.1
+        if val == 'tx+':
+            self.m_fTx += 0.02
+        if val == 'tx-':
+            self.m_fTx -= 0.02
+
+        if val == 'ty++':
+            self.m_fTy += 0.1
+        if val == 'ty--':
+            self.m_fTy -= 0.1
+        if val == 'ty+':
+            self.m_fTy += 0.02
+        if val == 'ty-':
+            self.m_fTy -= 0.02
+
+        if val == 's+':
+            self.m_fS += 0.02
+        if val == 's-':
+            self.m_fS -= 0.02
+        MyWindow.s_input.setValue(self.m_fS)
+        MyWindow.tx_input.setValue(self.m_fTx)
+        MyWindow.ty_input.setValue(self.m_fTy)
+        self.RenderFile()
 
 
     @staticmethod
     def GetSpinBoxObject():
         return MyWindow.s_input, MyWindow.tx_input, MyWindow.ty_input
 
-    # @staticmethod
-    # def GetParameters():
-    #     return self.m_fS, self.m_fTx, self.m_fTy
 
     def Getxy(self, event):
-        # MyWindow.s_input.setFocusPolicy(QtCore.Qt.NoFocus)
         x = event.pos().x()
         y = event.pos().y()
-        print("Global pos: ", x,y)
-        r = self.m_pixmapPix.rect()
-        x0, y0 = r.x(), r.y()
-        x1, y1 = x0+r.width(), y0+r.height()
 
-        # Check we clicked on the pixmap
-        if x >= x0 and x < x1 and y >= y0 and y < y1:
+        # smpl_pos_x, smpl_pos_y = self.get_smpl_current_location()
+        # change_x = x - smpl_pos_x
+        # change_y = y - smpl_pos_y
+        # if using smplx_mid_point
 
-            # emit position relative to pixmap bottom-left corner
-            x_relative = (x - x0) / (x1 - x0)
-            y_relative = (y - y0) / (y1 - y0)
+        self.m_fTx = 0.00611 * x - 1.96719
+        self.m_fTy = 0.01028 * y - 1.78356
+        # new_tx = 0.00611 * x - 1.96719
+        MyWindow.s_input.setValue(self.m_fS)
+        MyWindow.tx_input.setValue(self.m_fTx)
+        MyWindow.ty_input.setValue(self.m_fTy)
+        self.RenderFile()
 
-            print("Local pos: ", x_relative, y_relative)
 
-    
     def wheelEvent(self,event):
         self.x =self.x + event.angleDelta().y()/120
         print("wheel: ",self.x)
         delta = event.angleDelta().y()
         self.x += (delta and delta // abs(delta))
         print("wheel with abs: ",self.x)
+
+    def dump_data(self):
+        if 0:
+            pass
+        else:
+            with open(self.dump_path, 'wb') as fi:
+                pickle.dump( self.data, fi)
+            print('Data dumped!!!')
 
     def ValueChange(self):
         changed = False
@@ -191,8 +223,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.m_fTy = MyWindow.ty_input.value()
             changed = True
         if changed == True:
-            self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
-
+            self.RenderFile()
 
     def SetDoubleSpinBoxValues(self, object_name, step, decimal, initial_val):
         object_name.setDecimals(decimal)
@@ -204,7 +235,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # object_name.setKeyboardTracking(False)
 
     def FetchPrevFrame(self):
-
+        self.data['orig_cam'][self.m_iFrameCounter] = self.get_parameters()
         self.m_iFrameCounter -= 1
 
         if self.m_iFrameCounter < 0:
@@ -213,14 +244,15 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
 
-        self.SetDoubleSpinBoxValues(MyWindow.s_input, 0.01, 5, self.m_fS)
-        self.SetDoubleSpinBoxValues(MyWindow.tx_input, 0.01, 5, frame_cam[2])
-        self.SetDoubleSpinBoxValues(MyWindow.ty_input,0.01, 5, frame_cam[3])
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
+        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
 
-        self.RenderFile(self.m_iFrameCounter, None, None, None)
-        print("frame number = ", self.m_iFrameCounter)
+        self.RenderFile()
+        # print("frame number = ", self.m_iFrameCounter)
 
     def FetchNextFrame(self):
+        self.data['orig_cam'][self.m_iFrameCounter] = self.get_parameters()
         self.m_iFrameCounter += 1
 
         if self.m_iFrameCounter > self.m_iTotalframes:
@@ -229,47 +261,51 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
 
-        self.SetDoubleSpinBoxValues(MyWindow.s_input, 0.01, 5, self.m_fS)
-        self.SetDoubleSpinBoxValues(MyWindow.tx_input, 0.01, 5, frame_cam[2])
-        self.SetDoubleSpinBoxValues(MyWindow.ty_input,0.01, 5, frame_cam[3])
-        self.RenderFile(self.m_iFrameCounter, None, None, None)
+        self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, self.m_fS)
+        self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, frame_cam[2])
+        self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, frame_cam[3])
+        self.RenderFile()
 
-        print("frame number = ", self.m_iFrameCounter)
+
+    def get_parameters(self, first_frame = False):
+        if first_frame:
+            frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
+            tx = frame_cam[2]
+            ty = frame_cam[3]
+            sx = frame_cam[0]
+            sy = sx * self.ratio
+        else:
+            sx = self.m_fS
+            sy = sx * self.ratio
+            tx = self.m_fTx
+            ty = self.m_fTy
+        return sx, sy, tx, ty
 
     def ChangeParameters(self):
         if 0:
             pass
         else:
-                self.m_fS = MyWindow.s_input.value()
-                self.m_fTx = MyWindow.tx_input.value()
-                self.m_fTy = MyWindow.ty_input.value()
-                self.RenderFile(self.m_iFrameCounter, self.m_fS, self.m_fTx, self.m_fTy)
-                
-    def RenderFile(self, i = None, s=None, tx=None, ty=None):
+            self.m_fS = self.s_input.value()
+            self.m_fTx = self.tx_input.value()
+            self.m_fTy = self.ty_input.value()
+            self.RenderFile()
+
+    def RenderFile(self, first_frame = False):
         if 1:
-            print("renderfile i value: ", i)
-            pose = self.all_poses[i][3:72]
+            i = self.m_iFrameCounter
+            pose = self.all_poses[i][3:66]
             betas = self.all_betas[i]
             global_orient = self.data['pose'][i][:3]
-
-            frame_cam = self.data['orig_cam'][i]
-            if all([s, tx, ty]):
-                s = float(s)
-                tx = float(tx)
-                ty = float(ty)
-                print("s,tx,ty:", s, tx, ty)
-                frame_cam = [s*frame_cam[0], s*frame_cam[1], tx, ty]
-                print("frame cam:", frame_cam)
+            frame_cam = self.get_parameters(first_frame = first_frame)
 
             ret, frame = self.all_frames[i]
-            img, mask = render_current_frame(ret, frame, frame_cam, self.renderer, self.model, pose, betas, global_orient)
-            new_img = QImage(img, img.shape[1], img.shape[0], QImage.Format_RGB888)
+            self.curr_img, self.curr_mask = render_current_frame(ret, frame, frame_cam, self.renderer, self.model, pose, betas, global_orient)
+
+            new_img = QImage(self.curr_img, self.curr_img.shape[1], self.curr_img.shape[0], QImage.Format_RGB888)
             self.m_pixmapPix = QPixmap.fromImage(new_img)
             self.m_pixmapPix = self.m_pixmapPix.scaled(self.label_width, self.label_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             self.display_label.setPixmap(self.m_pixmapPix)
-
             self.frame_info = str(i) + "/" + str(self.m_iTotalframes)
-
             self.frame_info_label.setText(self.frame_info)
 
         else:
@@ -278,13 +314,6 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             msg.setText("Render file not available")
             msg.setIcon(QMessageBox.Warning)
             x = msg.exec_()
-
-    def CheckAnnotation(self, state):
-        if state == QtCore.Qt.Checked:
-            print("Annotation mode")
-        else:
-            print("Normal viewing mode")
-        
 
 def main():
     app = QApplication(sys.argv)
