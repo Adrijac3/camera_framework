@@ -16,8 +16,6 @@ import random
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-# from smpl import SMPL, SMPL_MODEL_DIR
-# from smpl import get_smpl_faces
 from pyrender.constants import RenderFlags
 import smplx
 import trimesh
@@ -91,48 +89,21 @@ class Renderer:
 
         rgb, _ = self.renderer.render(self.scene, flags=render_flags)
 
-        rgb = cv2.resize(rgb, (img.shape[1], img.shape[0]))
+        # rgb = cv2.resize(rgb, (img.shape[1], img.shape[0]))
         valid_mask = (rgb[:, :, -1] > 0)[:, :, np.newaxis]
         output_img = rgb[:, :, :-1] * valid_mask + (1 - valid_mask) * img
         image = output_img.astype(np.uint8)
         valid_mask = valid_mask.astype(np.uint8)
 
-        # image = rgb.astype(np.uint8)
         self.scene.remove_node(mesh_node)
         self.scene.remove_node(cam_node)
         return image, valid_mask
 
-def render_current_frame(ret, frame, frame_cam, renderer, model, pose, betas, global_orient):
-    pose = torch.tensor(pose).unsqueeze(0).float()
-    betas  = torch.tensor(betas.T).float()
-
-    go = torch.tensor(global_orient).unsqueeze(0).float()
-
-    out = model(global_orient = go, body_pose = pose, betas = betas)
-
-    frame_verts = out.vertices[0].detach().numpy()
-    faces = model.faces
-
-    """
-    TO dump the image
-    """
-    # pelvis = out.joints[0][0].detach().numpy()
-    # frame_verts = frame_verts -  pelvis
-
-    # mesh = trimesh.Trimesh(vertices=frame_verts, faces=faces, process=False, maintain_order = True)
-    # Rx = trimesh.transformations.rotation_matrix(math.radians(180), [1, 0, 0])
-    # mesh.apply_transform(Rx)
-
-    # frame_verts = mesh.vertices + pelvis
-
-    if ret:
-        frame = cv2.resize(frame[..., ::-1], (640, 360))
-        img, mask = renderer.render( frame, frame_verts, faces, cam=frame_cam, mesh_filename=None,)
-
+def render_current_frame(resolution, frame, frame_cam, renderer, model, frame_verts, faces):
+    img, mask = renderer.render( frame, frame_verts, faces, cam=frame_cam, mesh_filename=None)
     return img, mask
 
-
-def initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated):
+def initialize_rendering(model_folder,  gender, video_path, tcmr_output, annotated):
     data = joblib.load(tcmr_output)[1]
 
     # with open(tcmr_output, 'rb') as fi:
@@ -141,10 +112,7 @@ def initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated)
     with open(annotated, 'rb') as fi:
         ad = pickle.load(fi)
 
-
-    # model = SMPL( SMPL_MODEL_DIR, batch_size=1, create_transl=False, gender= gender)
-    model_folder = '/Users/coreqode/Desktop/00.00-ObsUniv/99-GR/smplx/models'
-    model = smplx.create(model_folder, create_global_orient = True, create_body_pose = True, create_betas = True, model_type='smplx', gender='male', num_betas = 10)
+    model = smplx.create(model_folder, create_global_orient = True, create_body_pose = True, create_betas = True, create_left_hand_pose = True, create_right_hand_pose = True, model_type='smplx', gender='male', num_betas = 10, use_pca = False)
 
     cap = cv2.VideoCapture(video_path)
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -154,25 +122,34 @@ def initialize_rendering(frame_name, gender, video_path, tcmr_output, annotated)
     all_poses = ad['pose']
     all_betas = ad['beta']
 
-    renderer = Renderer(resolution=(640, 360), orig_img=True, wireframe=False)
+    resize = False
+    if width > 640:
+        resize = True
+        width = width // 2
+        height = height // 2
+        if width > 640:
+            width = width // 2
+            height = height // 2
+
+    renderer = Renderer(resolution=(width, height), orig_img=True, wireframe=False)
 
     all_frames = []
-    all_frames = [cap.read() for i in range(frame_count)]
-    return width, height, frame_count, all_frames, all_poses, all_betas, data, renderer, model
+    all_verts = []
 
-if __name__ == '__main__':
-    width, height, frame_count, all_frames, all_poses, all_betas, data, renderer, model= initialize_rendering()
-    for i in trange(frame_count):
-        pose = all_poses[i][3:]
-        print(pose.shape)
+    for i in trange(frame_count - 1):
+        pose = all_poses[i][3:66]
         betas = all_betas[i]
-        # global_orient = data['pose'][i][:3]
         global_orient = all_poses[i][:3]
-        frame_cam = data['orig_cam'][i]
-        ret, frame = all_frames[i]
-        img, mask = render_current_frame(ret, frame, frame_cam, renderer, model, pose, betas, global_orient)
-
-
-        plt.imshow(img)
-        plt.show()
-
+        ret, frame = cap.read()
+        if resize:
+            frame = cv2.resize(frame, (int(width), int(height)))
+        all_frames.append(frame[..., ::-1])
+        pose = torch.tensor(pose).unsqueeze(0).float()
+        betas  = torch.tensor(betas.T).float()
+        left_hand_pose = torch.tensor(all_poses[i][75:120]).float()
+        right_hand_pose = torch.tensor(all_poses[i][120:165]).float()
+        go = torch.tensor(global_orient).unsqueeze(0).float()
+        out = model(global_orient = go, body_pose = pose, betas = betas, left_hand_pose = left_hand_pose, right_hand_pose = right_hand_pose)
+        frame_verts = out.vertices[0].detach().numpy()
+        all_verts.append(frame_verts)
+    return width, height, frame_count, all_frames, data, renderer, model, all_verts, model.faces
