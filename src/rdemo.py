@@ -103,11 +103,11 @@ def render_current_frame(resolution, frame, frame_cam, renderer, model, frame_ve
     img, mask = renderer.render( frame, frame_verts, faces, cam=frame_cam, mesh_filename=None)
     return img, mask
 
-def initialize_rendering(model_folder,  gender, video_path, tcmr_output, annotated):
-    data = joblib.load(tcmr_output)[1]
-
-    # with open(tcmr_output, 'rb') as fi:
-    #     data = pickle.load(fi)
+def initialize_rendering(model_folder,  gender, video_path, tcmr_output, annotated, resume, cam_out_path):
+    if not resume:
+        data = joblib.load(tcmr_output)[1]['orig_cam']
+    else:
+        data = joblib.load(cam_out_path)['cam']
 
     with open(annotated, 'rb') as fi:
         ad = pickle.load(fi)
@@ -117,7 +117,7 @@ def initialize_rendering(model_folder,  gender, video_path, tcmr_output, annotat
     cap = cv2.VideoCapture(video_path)
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) - 1
 
     all_poses = ad['pose']
     all_betas = ad['beta']
@@ -136,7 +136,7 @@ def initialize_rendering(model_folder,  gender, video_path, tcmr_output, annotat
     all_frames = []
     all_verts = []
 
-    for i in trange(frame_count - 1):
+    for i in trange(frame_count):
         pose = all_poses[i][3:66]
         betas = all_betas[i]
         global_orient = all_poses[i][:3]

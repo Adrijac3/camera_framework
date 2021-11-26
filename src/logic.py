@@ -13,6 +13,8 @@ from ui import Ui_MainWindow
 from rdemo import Renderer, initialize_rendering, render_current_frame
 import argparse
 from collections import defaultdict
+import pickle
+import os
 
 
 class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -91,7 +93,12 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         frame_name = str(args[0])
         gender = str(args[1])
         model_folder = str(args[2])
+        resume = str(args[3])
 
+        if resume == 'resume':
+            self.resume = True
+        else:
+            self.resume = False
 
         root_path = os.getcwd()
         dump_path = f"data/to_annotate/{frame_name}/annotate/cam_out.pkl"
@@ -103,11 +110,17 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         annotated = f"data/to_annotate/{frame_name}/annotate/smplx_param.pkl"
         annotated = os.path.join(root_path, annotated)
 
+        if self.resume:
+            cam_out_path = f"data/to_annotate/{frame_name}/annotate/cam_out.pkl"
+            assert(os.path.exists(cam_out_path))
+        else:
+            cam_out_path = None
+
+        self.width, self.height, self.m_iTotalframes, self.all_frames, self.data, self.renderer, self.model, self.all_verts, self.faces = initialize_rendering(model_folder,  gender, video_path, tcmr_output, annotated, self.resume, cam_out_path)
 
         self.annot_cam = defaultdict(lambda: defaultdict(dict))
-
-
-        self.width, self.height, self.m_iTotalframes, self.all_frames, self.data, self.renderer, self.model, self.all_verts, self.faces = initialize_rendering(model_folder,  gender, video_path, tcmr_output, annotated)
+        if self.resume:
+            self.annot_cam['cam'] = self.data
 
         self.resolution = (self.width, self.height)
         self.label_width = self.resolution[0]
@@ -119,7 +132,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.display_label.setGeometry(QtCore.QRect(20, 20, self.label_width, self.label_height))
 
         '''SET QDoubleSpinBox initial values'''
-        frame_cam = self.data['orig_cam'][0]
+        frame_cam = self.data[0]
         # print("default values :", frame_cam)
         self.m_fS = frame_cam[0]
         self.m_fTx = frame_cam[2]
@@ -184,8 +197,6 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             MyWindow.ty_input.setValue(self.m_fTy)
             self.RenderFile()
 
-
-
     @staticmethod
     def GetSpinBoxObject():
         return MyWindow.s_input, MyWindow.tx_input, MyWindow.ty_input
@@ -217,12 +228,12 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if 0:
             pass
         else:
+
             self.annot_cam['width']  = self.width
             self.annot_cam['height']  = self.height
+            self.annot_cam = dict(self.annot_cam)
             with open(self.dump_path, 'wb') as fi:
                 pickle.dump( self.annot_cam, fi)
-
-            print(self.width, self.height)
             print('Data dumped!!!')
 
     def ValueChange(self):
@@ -246,55 +257,57 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         object_name.setSingleStep(step)
 
     def FetchPrevFrame(self):
-        # self.data['orig_cam'][self.m_iFrameCounter] = self.get_parameters()
 
         sx, sy, tx, ty = self.get_parameters()
         self.m_iFrameCounter -= 1
-
         if self.m_iFrameCounter < 0:
             print("resetting frame from ", self.m_iFrameCounter," to 0")
             self.m_iFrameCounter = 0
 
-        # frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
-
         self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, sx)
         self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, tx)
         self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, ty)
-
         self.RenderFile()
 
     def FetchNextFrame(self):
-        # self.data['orig_cam'][self.m_iFrameCounter] = self.get_parameters()
         sx, sy, tx, ty = self.get_parameters()
-
         self.m_iFrameCounter += 1
 
-        if self.m_iFrameCounter > self.m_iTotalframes:
+        if self.m_iFrameCounter > self.m_iTotalframes - 1:
             print("resetting frame from ", self.m_iFrameCounter," to ", self.m_iTotalframes)
-            self.m_iFrameCounter = self.m_iTotalframes
+            self.m_iFrameCounter = self.m_iTotalframes - 1
 
-        # frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
 
         self.SetDoubleSpinBoxValues(self.s_input, 0.01, 5, sx)
         self.SetDoubleSpinBoxValues(self.tx_input, 0.01, 5, tx)
         self.SetDoubleSpinBoxValues(self.ty_input,0.01, 5, ty)
         self.RenderFile()
 
-    def get_parameters(self, first_frame = False):
-
-        if first_frame:
-            frame_cam = self.data['orig_cam'][self.m_iFrameCounter]
-            tx = frame_cam[2]
-            ty = frame_cam[3]
-            sx = frame_cam[0]
+    def get_parameters_resume(self):
+        if self.annotate.isChecked():
+            sx = self.m_fS
             sy = sx * self.ratio
+            tx = self.m_fTx
+            ty = self.m_fTy
         else:
-            if self.annotate.isChecked():
+            if len(self.annot_cam['cam'][self.m_iFrameCounter]) != 0:
+                sx, sy, tx, ty = self.annot_cam['cam'][self.m_iFrameCounter]
+                MyWindow.s_input.setValue(sx)
+                MyWindow.tx_input.setValue(tx)
+                MyWindow.ty_input.setValue(ty)
+            else:
                 sx = self.m_fS
                 sy = sx * self.ratio
                 tx = self.m_fTx
                 ty = self.m_fTy
-            else:
+                MyWindow.s_input.setValue(sx)
+                MyWindow.tx_input.setValue(tx)
+                MyWindow.ty_input.setValue(ty)
+        return sx, sy, tx, ty
+
+    def get_parameters(self, first_frame = False):
+        if self.resume:
+            if not self.annotate.isChecked():
                 if len(self.annot_cam['cam'][self.m_iFrameCounter]) != 0:
                     sx, sy, tx, ty = self.annot_cam['cam'][self.m_iFrameCounter]
                     MyWindow.s_input.setValue(sx)
@@ -308,7 +321,38 @@ class MyWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     MyWindow.s_input.setValue(sx)
                     MyWindow.tx_input.setValue(tx)
                     MyWindow.ty_input.setValue(ty)
-
+            elif self.annotate.isChecked():
+                sx = self.m_fS
+                sy = sx * self.ratio
+                tx = self.m_fTx
+                ty = self.m_fTy
+        else:
+            if first_frame:
+                frame_cam = self.data[self.m_iFrameCounter]
+                tx = frame_cam[2]
+                ty = frame_cam[3]
+                sx = frame_cam[0]
+                sy = sx * self.ratio
+            else:
+                if self.annotate.isChecked():
+                    sx = self.m_fS
+                    sy = sx * self.ratio
+                    tx = self.m_fTx
+                    ty = self.m_fTy
+                else:
+                    if len(self.annot_cam['cam'][self.m_iFrameCounter]) != 0:
+                        sx, sy, tx, ty = self.annot_cam['cam'][self.m_iFrameCounter]
+                        MyWindow.s_input.setValue(sx)
+                        MyWindow.tx_input.setValue(tx)
+                        MyWindow.ty_input.setValue(ty)
+                    else:
+                        sx = self.m_fS
+                        sy = sx * self.ratio
+                        tx = self.m_fTx
+                        ty = self.m_fTy
+                        MyWindow.s_input.setValue(sx)
+                        MyWindow.tx_input.setValue(tx)
+                        MyWindow.ty_input.setValue(ty)
         return sx, sy, tx, ty
 
     def RenderFile(self, first_frame = False):
